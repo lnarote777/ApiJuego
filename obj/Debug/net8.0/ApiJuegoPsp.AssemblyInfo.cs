@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ApiJuegoPsp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aad2612da26f7a93830e28435796f9d95b30d900")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c746da772662c92311638aeea6fa783b25a6165a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ApiJuegoPsp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ApiJuegoPsp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
