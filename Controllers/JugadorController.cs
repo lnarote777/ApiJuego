@@ -78,7 +78,7 @@ namespace ApiJuegoPsp.Controllers
         public async Task<ActionResult<Jugador>> PostJugador(Jugador jugador)
         {
 
-            if (jugador.Coins < 0 || jugador.Points < 0)
+            if (jugador.Coins < 0 || jugador.Points < 0 || string.IsNullOrEmpty(jugador.Name))
             {
                 return BadRequest();
             }
