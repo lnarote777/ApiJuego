@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using MongoDB.Driver;
+using MongoDB.Bson;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiJuegoPsp.Models;
@@ -13,32 +10,48 @@ namespace ApiJuegoPsp.Controllers
     [ApiController]
     public class JugadorController : ControllerBase
     {
-        private readonly Context _context;
+        private readonly IMongoCollection<Jugador> _jugadores;
+        private readonly IMongoCollection<Contador> _contador;
 
-        public JugadorController(Context context)
+        public JugadorController(IMongoClient mongoClient)
         {
-            _context = context;
+            var database = mongoClient.GetDatabase("JuegoPsp");
+            _jugadores = database.GetCollection<Jugador>("Jugadores");
+            _contador = database.GetCollection<Contador>("Contador");
+        }
+
+        private async Task<long> ObtenerSiguienteId()
+        {
+            var filter = Builders<Contador>.Filter.Eq(c => c.Id, "jugador");
+            var update = Builders<Contador>.Update.Inc(c => c.Secuencia, 1);
+            var options = new FindOneAndUpdateOptions<Contador>
+            {
+                ReturnDocument = ReturnDocument.After,
+                IsUpsert = true // Si no existe, lo crea
+            };
+
+            var contador = await _contador.FindOneAndUpdateAsync(filter, update, options);
+            return contador.Secuencia;
         }
 
         // GET: api/Jugador
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Jugador>>> GetJugadores()
         {
-            return await _context.Jugadores.ToListAsync();
+            var jugadores = await _jugadores.Find(j => true).ToListAsync();
+            return Ok(jugadores);
         }
 
         // GET: api/Jugador/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Jugador>> GetJugador(long id)
         {
-            var jugador = await _context.Jugadores.FindAsync(id);
-
+            var jugador = await _jugadores.Find(j => j.Id == id).FirstOrDefaultAsync();
             if (jugador == null)
             {
                 return NotFound();
             }
-
-            return jugador;
+            return Ok(jugador);
         }
 
         // PUT: api/Jugador/5
@@ -48,25 +61,13 @@ namespace ApiJuegoPsp.Controllers
         {
             if (id != jugador.Id)
             {
-                return BadRequest();
+                return BadRequest("El ID de la URL y del cuerpo no coinciden.");
             }
 
-            _context.Entry(jugador).State = EntityState.Modified;
-
-            try
+            var result = await _jugadores.ReplaceOneAsync(j => j.Id == id, jugador);
+            if (result.MatchedCount == 0)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!JugadorExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return NotFound();
             }
 
             return NoContent();
@@ -78,13 +79,13 @@ namespace ApiJuegoPsp.Controllers
         public async Task<ActionResult<Jugador>> PostJugador(Jugador jugador)
         {
 
-            if ( string.IsNullOrEmpty(jugador.Name) || jugador.Coins < 0 || jugador.Points < 0 )
+            if (string.IsNullOrEmpty(jugador.Name) || jugador.Coins < 0 || jugador.Points < 0)
             {
-                return BadRequest();
+                return BadRequest("Datos inválidos.");
             }
 
-            _context.Jugadores.Add(jugador);
-            await _context.SaveChangesAsync();
+            jugador.Id = await ObtenerSiguienteId();
+            await _jugadores.InsertOneAsync(jugador);
 
             return CreatedAtAction(nameof(GetJugador), new { id = jugador.Id }, jugador);
         }
@@ -93,21 +94,13 @@ namespace ApiJuegoPsp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJugador(long id)
         {
-            var jugador = await _context.Jugadores.FindAsync(id);
-            if (jugador == null)
+            var result = await _jugadores.DeleteOneAsync(j => j.Id == id);
+            if (result.DeletedCount == 0)
             {
                 return NotFound();
             }
 
-            _context.Jugadores.Remove(jugador);
-            await _context.SaveChangesAsync();
-
             return NoContent();
-        }
-
-        private bool JugadorExists(long id)
-        {
-            return _context.Jugadores.Any(e => e.Id == id);
         }
     }
 }
