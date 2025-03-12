@@ -85,7 +85,7 @@ namespace ApiJuegoPsp.Controllers
             }
 
             jugador.Id = await ObtenerSiguienteId();
-            jugador.UltimaConexion = DateTime.UtcNow;
+            jugador.UltimaConexion = DateTime.Now;
             await _jugadores.InsertOneAsync(jugador);
 
             return CreatedAtAction(nameof(GetJugador), new { id = jugador.Id }, jugador);
